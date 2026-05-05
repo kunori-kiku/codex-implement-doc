@@ -40,6 +40,23 @@ It should reason from:
 12. Update state.
 13. Continue, correct, complete, escalate, or notify.
 
+## Run Outcome Invariant
+
+An unattended run must not idle indefinitely.
+
+It must end the current pass as one of:
+
+- completed;
+- waiting-remote-decision;
+- needs-user-decision;
+- paused;
+- stopped;
+- failed-with-incident.
+
+If progress is blocked by environment, dependency, permission, MCP, notification, timeout, sandbox, credential, or authorization issues, treat that as a catch-all operational incident.
+
+Remote decision is the default for every user decision. Ask in the direct Codex session only when no remote notification or reply path is available.
+
 ## What Counts As A Bounded Task
 
 Good examples:
@@ -76,6 +93,8 @@ Bad examples:
 - relying on Telegram inline keyboard by default;
 - continuing from stale Telegram replies;
 - accepting replies from non-allowlisted users;
+- asking locally for decisions when a remote decision path exists;
+- leaving a run idle without completion, remote decision, pause, stop, or incident;
 - using generic Signal MCP servers by default;
 - using Resend contact/broadcast/domain/API-key/webhook tools by default.
 

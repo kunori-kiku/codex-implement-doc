@@ -24,6 +24,18 @@
   "title": "Roadmap decision required",
   "summary": "",
   "message": "",
+  "incident_category": "roadmap_or_operational_blocker",
+  "remediation": {
+    "needed": false,
+    "preferred_choice": null,
+    "brief_options": [],
+    "details_report_path": "",
+    "requires_privileged_action": false,
+    "danger_full_access_already_approved_for_run": false,
+    "safety_verifier_required": false,
+    "operator_plan_path": "",
+    "safety_verifier_report_path": ""
+  },
   "report_paths": {
     "worker_report": "",
     "incident_report": "",
@@ -70,10 +82,12 @@
       "D",
       "E",
       "F",
+      "G",
+      "H",
       "CUSTOM"
     ],
     "reply_patterns": [
-      "^(A|B|C|D|E|F)\\s+<nonce>$",
+      "^(A|B|C|D|E|F|G|H)\\s+<nonce>$",
       "^CUSTOM\\s+<nonce>\\s+.+$"
     ],
     "on_valid_reply": "write_remote_decision_and_continue",

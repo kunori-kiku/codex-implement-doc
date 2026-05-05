@@ -16,6 +16,11 @@ Recommended choice:
 Why:
 {{RECOMMENDED_REASON}}
 
+Remediation options:
+{{REMEDIATION_OPTIONS_BRIEF}}
+
+Detailed remediation notes are in the incident report.
+
 Required action:
 Reply in Telegram, not email.
 
@@ -27,7 +32,11 @@ C {{NONCE}} — Keep partial changes and redirect
 D {{NONCE}} — I will provide a new roadmap section
 E {{NONCE}} — Stop this implementation run
 F {{NONCE}} — Run read-only verifier first
+G {{NONCE}} — Approve non-privileged MCP-agent remediation
+H {{NONCE}} — Approve privileged remediation only after independent safety review
 CUSTOM {{NONCE}} <your instruction>
+
+For H, the controller must prepare an operator plan and use an independent read-only safety verifier before executing newly privileged or dangerous actions. This extra safety gate is not required merely because danger-full-access was already explicitly approved for this run; once recorded, that sandbox is treated as the normal efficient worker mode.
 
 Example:
 C {{NONCE}}

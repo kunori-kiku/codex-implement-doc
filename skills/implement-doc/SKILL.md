@@ -1,6 +1,6 @@
 ---
 name: implement-doc
-description: Use this skill when the user asks Codex to implement a roadmap, implementation document, design document, SPEC.md, ROADMAP.md, TODO plan, research engineering plan, or any document-driven implementation task. This skill orchestrates exactly one persistent Codex MCP worker session, stores the worker thread id, assigns bounded implementation tasks, requires detailed implementation reports, performs lightweight verification without loading full diffs into the controller context, escalates roadmap deviations through incident reports, sends notification emails through Resend, and accepts executable remote decisions through Telegram plain-text replies.
+description: Use this skill when the user asks Codex to implement a roadmap, implementation document, design document, SPEC.md, ROADMAP.md, TODO plan, research engineering plan, or any document-driven implementation task. This skill orchestrates exactly one persistent Codex MCP worker session, stores the worker thread id, assigns bounded implementation tasks, requires detailed implementation reports, performs lightweight verification without loading full diffs into the controller context, escalates roadmap deviations and operational blockers through incident reports, sends notification emails through Resend, and accepts executable remote decisions through Telegram plain-text replies.
 ---
 
 # Implement Doc Skill
@@ -35,6 +35,12 @@ Incident reports must be sent to the user by Resend email when SEV0-SEV2 user de
 
 Incident reports should also be sent to Telegram when available.
 
+All user decisions should use the remote decision flow first.
+
+The direct Codex session is a fallback decision channel only when no configured remote notification or reply channel is available.
+
+A single unattended run must not idle indefinitely: it must either complete the document currently being implemented, stop in an auditable user-decision state, or stop with an incident that explains why progress cannot continue.
+
 Signal is disabled by default.
 
 Do not connect generic Signal MCP servers that expose arbitrary send or receive tools.
@@ -60,6 +66,7 @@ The controller is responsible for:
 - comparing results against the roadmap;
 - deciding whether to continue, correct, complete, or escalate;
 - writing incident reports when implementation diverges from the roadmap;
+- writing catch-all incident reports when orchestration, environment, dependency, permission, tool, or notification failures prevent progress;
 - writing notification intents for SEV0-SEV2 incidents;
 - sending notification emails through Resend when available;
 - attaching or embedding incident reports in Resend email when available;
@@ -68,7 +75,7 @@ The controller is responsible for:
 - sending incident reports to Telegram when available;
 - accepting executable user decisions through allowlisted Telegram plain-text replies;
 - writing accepted remote decisions under `remote-decisions/`;
-- asking the user for a multiple-choice or custom decision only when needed.
+- asking the user in the direct Codex session only if remote decision delivery is unavailable.
 
 The controller must not directly edit implementation code unless:
 
@@ -83,6 +90,8 @@ The controller must not use email replies as executable approval by default.
 The controller must not use Signal replies as executable approval.
 
 The controller must accept executable remote decisions through Telegram plain-text replies by default.
+
+The controller must prefer remote decision requests for every user decision, including roadmap ambiguities, environment remediation, dependency installation, credential needs, permission needs, tool failure recovery, sandbox changes, and unsafe-operation approvals.
 
 ### 1.2 Persistent MCP Worker Session
 
@@ -147,6 +156,8 @@ Default policy:
 
 The notification layer must not silently execute unauthenticated or stale replies.
 
+If a decision is needed and Telegram receiving is unavailable, the controller should still send the formal Resend notification, write all local artifacts, set state to `needs-user-decision`, and stop. It should ask in the direct Codex session only when no remote notification path can be created.
+
 ## 2. Required User Inputs
 
 The user should provide, explicitly or implicitly:
@@ -201,12 +212,16 @@ When starting a worker session, use the MCP `codex` tool.
 
 When continuing a worker session, use the MCP `codex-reply` tool with the stored `threadId`.
 
-Before starting the MCP worker, prompt the user to choose the worker sandbox mode.
+Before starting the MCP worker, obtain the worker sandbox choice.
+
+Prefer using the remote decision flow when the run is unattended or the user is not actively in the Codex session.
+
+Use the direct Codex session for this choice only when the user is already present or no remote path is available.
 
 Explain both risks plainly:
 
 * `workspace-write` is safer because it limits filesystem writes to the workspace, but Codex MCP runs in this mode may sometimes hang forever because of sandbox or bubblewrap behavior.
-* `danger-full-access` can avoid sandbox-related hangs, but it removes filesystem sandbox protections. The worker may read or write files outside the repository and run commands without sandbox containment. Use it only when the repository is disposable, containerized, backed up, or the user accepts that risk.
+* `danger-full-access` can avoid sandbox-related hangs and is the efficient worker mode once approved, but it removes filesystem sandbox protections. The worker may read or write files outside the repository and run commands without sandbox containment. Use it only when the repository is disposable, containerized, backed up, or the user accepts that risk.
 
 Ask the user whether they want to run the MCP worker with `danger-full-access`.
 
@@ -252,6 +267,10 @@ If the user explicitly approves `danger-full-access`, use:
 
 Never use `danger-full-access` unless the user explicitly approved it after seeing the risk explanation.
 
+When the user approves `danger-full-access` for the run, record that approval in the state file under `approval_state.danger_full_access_approved_for_run` with a short note. Do not treat later use of the approved sandbox mode as a new privileged remediation incident by itself.
+
+After that approval is recorded, use `danger-full-access` as the efficient normal worker sandbox for the run when it helps avoid sandbox hangs. Do not repeatedly re-check, re-explain, escalate, or spend verifier budget on the sandbox choice itself; the Codex toolchain handles the authorization boundary.
+
 ## 4. Optional Notification MCP Setup
 
 The skill supports notification MCP servers, but should use a strict channel split.
@@ -292,6 +311,8 @@ C <nonce>
 D <nonce>
 E <nonce>
 F <nonce>
+G <nonce>
+H <nonce>
 CUSTOM <nonce> <freeform instruction>
 ```
 
@@ -376,8 +397,10 @@ If both Resend and Telegram are unavailable, write notification intent and stop 
 The controller must not continue a SEV0-SEV2 run without either:
 
 * accepted Telegram remote decision;
-* direct user instruction in the Codex session;
+* direct user instruction in the Codex session when no remote path is available;
 * explicit roadmap update resolving the incident.
+
+Direct user instruction in the Codex session is the fallback path, not the default path. Prefer Telegram remote decision for all approval, rejection, redirect, remediation, and stop decisions.
 
 ## 6. Required Orchestrator Directories
 
@@ -457,6 +480,25 @@ The controller must not rely only on conversation memory to remember the worker 
 ## 8. Main Loop
 
 The controller must follow this loop.
+
+### Run Progress Invariant
+
+A single unattended run must keep making bounded progress until it reaches exactly one auditable outcome:
+
+```text
+completed
+waiting-remote-decision
+needs-user-decision
+paused
+stopped
+failed-with-incident
+```
+
+The controller must not leave the run silently idle because of a missing tool, missing dependency, broken MCP server, unavailable credential, permission error, notification failure, sandbox limitation, package install need, command timeout, or repeated orchestration failure.
+
+If progress cannot continue for any reason not already covered by implementation divergence, classify it as a catch-all operational incident, write the incident report, create notification artifacts, notify through every available configured channel, and stop in `waiting-remote-decision`, `needs-user-decision`, or `failed-with-incident`.
+
+Remote decision is the default path for every user decision. The controller should prompt in the local Codex session only if no remote notification artifact can be created or no configured remote channel is available.
 
 ### Step 1 — Load Roadmap
 
@@ -603,6 +645,7 @@ done
 incident
 needs-user-decision
 waiting-remote-decision
+failed-with-incident
 ```
 
 ### Step 8 — Continue, Escalate, or Notify
@@ -640,6 +683,7 @@ If `needs-user-decision`:
 * notify through Resend and Telegram if configured;
 * send incident report through Resend email if available;
 * send incident report to Telegram if available;
+* prefer Telegram remote decision over a direct Codex-session prompt;
 * stop the loop until user decision is available.
 
 If `waiting-remote-decision`:
@@ -647,6 +691,12 @@ If `waiting-remote-decision`:
 * poll or read Telegram replies if a Telegram MCP receive mechanism exists;
 * otherwise leave state and notification intent files for an external watcher;
 * validate any reply before continuing.
+
+If `failed-with-incident`:
+
+* write an incident report explaining why the run cannot continue or cannot notify remotely;
+* update state with the terminal failure;
+* do not continue the worker.
 
 ## 9. Lightweight Diff Triage Policy
 
@@ -785,7 +835,7 @@ Action:
 * send Telegram notification if configured;
 * send incident report through Resend email;
 * send incident report to Telegram if useful;
-* wait for Telegram remote decision or direct user decision.
+* wait for Telegram remote decision, using direct Codex-session decision only when no remote path is available.
 
 ### SEV1 — Roadmap Contradiction
 
@@ -805,7 +855,7 @@ Action:
 * send Telegram notification if configured;
 * send incident report through Resend email;
 * send incident report to Telegram if useful;
-* wait for Telegram remote decision or direct user decision.
+* wait for Telegram remote decision, using direct Codex-session decision only when no remote path is available.
 
 ### SEV2 — Major Ambiguity / Missing Dependency
 
@@ -813,6 +863,11 @@ Examples:
 
 * roadmap lacks enough detail to choose between major technical routes;
 * dependency missing;
+* critical environment setup is missing;
+* MCP tool or server is unavailable and the run cannot proceed;
+* required package or system dependency needs installation;
+* authorization, credential, permission, sandbox, or quota issue blocks progress;
+* notification channel delivery fails in a way that prevents remote decision;
 * implementation requires user decision;
 * worker exposes a major feasibility blocker.
 
@@ -824,7 +879,44 @@ Action:
 * send Telegram notification if configured;
 * send incident report through Resend email;
 * send incident report to Telegram if useful;
-* wait for Telegram remote decision or direct user decision.
+* wait for Telegram remote decision, using direct Codex-session decision only when no remote path is available.
+
+### Catch-All Operational Incident
+
+Use the catch-all path when progress is blocked by something outside normal implementation quality or roadmap alignment.
+
+Examples:
+
+* the worker cannot start, resume, or return a report;
+* `codex_worker`, Resend, Telegram, package manager, test runner, compiler, interpreter, Docker, GPU driver, database, or other required tool is missing or broken;
+* dependency installation is needed and may take effort;
+* required credentials, tokens, cloud quota, network access, or account authorization are missing;
+* `sudo`, unapproved `danger-full-access`, production access, destructive commands, migration commands, service restart, package manager writes, or filesystem ownership changes may be required;
+* repeated command timeouts or orchestration failures prevent bounded progress;
+* all notification sends fail and no remote watcher artifact can be used.
+
+Default severity:
+
+* SEV2 when the user can choose a remediation route and the issue is not inherently destructive;
+* SEV0 when remediation requires newly privileged, destructive, production, credential, or security-sensitive actions;
+* SEV3 only when a non-privileged correction task can likely fix the issue without user input.
+
+Action:
+
+* write an incident report with `incident_category: operational_blocker`;
+* include a brief remediation proposal in the notification message and detailed remediation options in the report;
+* recommend `G` for ordinary MCP-agent remediation when no dangerous privileges are required;
+* recommend `H` when privileged or dangerous remediation might be required;
+* notify remotely through Resend and Telegram whenever possible;
+* use direct Codex-session prompting only if remote notification artifacts cannot be created.
+
+After approval:
+
+* for `G`, assign one bounded remediation task to the persistent MCP worker, then verify and continue the roadmap loop;
+* for `H`, create two MCP-agent tasks before any newly privileged action: one operator task on the persistent MCP worker proposing the exact commands and rollback plan, and one independent read-only safety verifier task scrutinizing safety, scope, reversibility, and least privilege;
+* do not require the two-agent safety gate, incident update, or repeated approval merely for `danger-full-access` if the user already explicitly approved that sandbox mode for this run after seeing the risk explanation;
+* execute newly privileged remediation only after the safety verifier agrees the operator plan is acceptable and the user approval explicitly covers that class of action;
+* if safety review rejects or materially changes the plan, write a new incident update and request another remote decision.
 
 ### SEV3 — Local Deviation
 
@@ -952,6 +1044,8 @@ C <nonce> — Keep partial changes but redirect implementation.
 D <nonce> — I will provide a new roadmap section.
 E <nonce> — Stop this implementation run.
 F <nonce> — Run a read-only verifier audit first.
+G <nonce> — Approve non-privileged MCP-agent remediation of the blocker.
+H <nonce> — Approve privileged or dangerous remediation only after independent safety review.
 CUSTOM <nonce> <instruction> — Give a custom instruction to the controller.
 ```
 
@@ -988,6 +1082,8 @@ C <nonce>
 D <nonce>
 E <nonce>
 F <nonce>
+G <nonce>
+H <nonce>
 CUSTOM <nonce> <freeform instruction>
 ```
 
@@ -1000,6 +1096,8 @@ C — Keep partial changes but redirect implementation.
 D — Wait for user to provide a new roadmap section.
 E — Stop run.
 F — Run read-only verifier first.
+G — Let the MCP agent fix a non-privileged operational blocker, then continue.
+H — Let the MCP agent prepare privileged remediation, but only after independent safety verifier approval.
 CUSTOM — Continue according to user's freeform instruction.
 ```
 
@@ -1015,11 +1113,13 @@ Replies from Signal must be ignored for execution.
 
 ## 15. User Decision Prompt
 
-For SEV0-SEV2, ask the user with choices.
+For SEV0-SEV2, ask the user remotely with choices.
 
 Do not ask vague open-ended questions if a multiple-choice prompt is possible.
 
 However, always include a `CUSTOM` option for freeform instructions.
+
+Use direct Codex-session questions only when no configured remote channel or notification artifact path is available.
 
 Example:
 
@@ -1036,6 +1136,8 @@ C 8KQ2 — Keep partial changes but redirect the worker.
 D 8KQ2 — I will provide a new roadmap section for this component.
 E 8KQ2 — Stop this implementation run.
 F 8KQ2 — Run a read-only verifier audit first.
+G 8KQ2 — Approve non-privileged MCP-agent remediation of the blocker.
+H 8KQ2 — Approve privileged remediation only after independent safety review.
 CUSTOM 8KQ2 <your instruction> — Give a custom controller instruction.
 ```
 
@@ -1105,6 +1207,7 @@ Reply in Telegram with: C 8KQ2
 * Store `threadId` in the state file.
 * Reuse the same worker thread for follow-up tasks.
 * Do not spawn multiple implementation workers.
+* For privileged remediation, use the persistent worker as the operator and a separate read-only safety verifier; do not create a second implementation worker.
 * Do not let the worker recursively call Codex.
 * Do not read full `git diff` by default.
 * Use optional read-only verifier for heavy diff inspection.
@@ -1118,6 +1221,11 @@ Reply in Telegram with: C 8KQ2
 * For SEV0-SEV2, send Telegram notification if configured.
 * For SEV0-SEV2, send incident report through Resend email if configured.
 * For SEV0-SEV2, accept executable reply through allowlisted Telegram plain-text reply.
+* Prefer remote decision for every user decision.
+* Treat orchestration, environment, dependency, permission, tool, notification, and repeated timeout blockers as catch-all operational incidents.
+* Do not leave a run idle: complete it, wait for a remote decision, pause, stop, or fail with an incident.
+* For ordinary operational remediation, use approval choice `G`.
+* For privileged or dangerous remediation, use approval choice `H` and require an independent read-only safety verifier before execution.
 * Do not use Telegram inline keyboard by default.
 * Do not use Resend email as executable approval by default.
 * Do not use Signal by default.

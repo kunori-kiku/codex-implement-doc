@@ -16,6 +16,16 @@
   "accepted": true,
   "rejection_reason": null,
   "controller_action": "continue_current_route",
+  "remediation": {
+    "approved": false,
+    "mode": null,
+    "requires_privileged_action": false,
+    "danger_full_access_already_approved_for_run": false,
+    "operator_plan_required": false,
+    "safety_verifier_required": false,
+    "operator_plan_path": null,
+    "safety_verifier_report_path": null
+  },
   "state_before": "",
   "state_after": "",
   "follow_up_task": null

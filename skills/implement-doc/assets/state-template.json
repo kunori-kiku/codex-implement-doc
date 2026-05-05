@@ -36,6 +36,23 @@
   },
   "unresolved_user_decision": null,
   "pending_remote_decision": null,
+  "run_outcome_invariant": {
+    "allowed_terminal_or_blocked_statuses": [
+      "completed",
+      "waiting-remote-decision",
+      "needs-user-decision",
+      "paused",
+      "stopped",
+      "failed-with-incident"
+    ],
+    "remote_decision_first": true,
+    "catch_all_operational_incidents": true
+  },
+  "approval_state": {
+    "danger_full_access_approved_for_run": false,
+    "danger_full_access_approval_note": null,
+    "privileged_action_approvals": []
+  },
   "notification_config": {
     "enabled": true,
     "auto_send_allowed": true,

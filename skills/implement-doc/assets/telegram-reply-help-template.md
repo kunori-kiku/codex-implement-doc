@@ -8,6 +8,8 @@ C {{NONCE}} — Keep partial changes and redirect
 D {{NONCE}} — I will provide new roadmap
 E {{NONCE}} — Stop run
 F {{NONCE}} — Run read-only verifier first
+G {{NONCE}} — Approve non-privileged MCP-agent remediation
+H {{NONCE}} — Approve privileged remediation after safety review
 
 Or:
 

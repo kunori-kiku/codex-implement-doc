@@ -38,10 +38,22 @@ Every SEV0-SEV2 Resend email should include:
 * one-paragraph summary;
 * recommended choice;
 * recommendation rationale;
+* brief remediation options when the incident is an operational blocker;
 * Telegram reply grammar;
 * nonce;
 * full incident report;
 * worker report if useful.
+
+Every decision should prefer Telegram remote reply.
+
+The direct Codex session is a fallback only when remote notification or reply cannot be created.
+
+Operational blocker emails should briefly explain choices `G` and `H`:
+
+* `G` approves non-privileged MCP-agent remediation.
+* `H` approves privileged or dangerous remediation after independent safety review.
+
+The `H` safety gate is not required merely because `danger-full-access` was already explicitly approved for this run. Once recorded, treat that sandbox as the efficient normal worker mode and do not re-notify about it.
 
 ## Subject Format
 
@@ -123,4 +135,3 @@ Do not accept email replies as executable approvals by default.
 Do not allow the agent to manage API keys or domains.
 
 Do not use Resend inbound email features unless explicitly configured in a separate reviewed workflow.
-

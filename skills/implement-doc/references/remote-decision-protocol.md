@@ -75,6 +75,14 @@ F:
 
 Run a read-only verifier audit first.
 
+G:
+
+Approve non-privileged MCP-agent remediation of an operational blocker.
+
+H:
+
+Approve privileged or dangerous remediation only after independent read-only safety review.
+
 CUSTOM:
 
 Use the freeform instruction after the nonce.
@@ -91,7 +99,9 @@ CUSTOM 8KQ2 keep the GPU filtering changes, but revert solver API changes and ad
 
 The controller must convert CUSTOM into a bounded controller action.
 
-If CUSTOM is ambiguous or unsafe, the controller must ask for clarification through Telegram or direct user prompt.
+If CUSTOM is ambiguous or unsafe, the controller must ask for clarification through Telegram, using a direct Codex-session prompt only when no remote path is available.
+
+For all user decisions, prefer Telegram remote decision. Direct Codex-session prompts are fallback only when no configured remote notification or reply path is available.
 
 ## Remote Decision File
 
@@ -188,9 +198,26 @@ F:
 * spawn read-only verifier;
 * use verifier result to decide.
 
+G:
+
+* set status active;
+* assign one bounded non-privileged remediation task to the persistent MCP worker;
+* verify the remediation;
+* continue the roadmap loop if the blocker is resolved;
+* write a new incident update and request another remote decision if remediation fails.
+
+H:
+
+* keep the run blocked until privileged remediation is planned and reviewed;
+* skip the two-agent safety gate, incident update, and repeated approval when the only elevated condition is `danger-full-access` and the user already explicitly approved that sandbox mode for this run;
+* after approval is recorded, treat `danger-full-access` as the efficient normal worker sandbox for the run and rely on the Codex toolchain authorization boundary;
+* use the persistent MCP worker as the operator task to propose exact commands, affected files/services, expected output, risks, and rollback plan;
+* create one independent read-only safety verifier task to scrutinize the operator plan;
+* proceed only if the verifier accepts the plan and user approval covers the action class;
+* if rejected, materially changed, or still unsafe, write an incident update and request another remote decision.
+
 CUSTOM:
 
 * set status active only if instruction is safe and clear;
 * create bounded task from custom instruction;
 * otherwise ask follow-up.
-

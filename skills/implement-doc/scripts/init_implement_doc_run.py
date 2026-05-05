@@ -197,6 +197,23 @@ def main() -> int:
         },
         "unresolved_user_decision": None,
         "pending_remote_decision": None,
+        "run_outcome_invariant": {
+            "allowed_terminal_or_blocked_statuses": [
+                "completed",
+                "waiting-remote-decision",
+                "needs-user-decision",
+                "paused",
+                "stopped",
+                "failed-with-incident",
+            ],
+            "remote_decision_first": True,
+            "catch_all_operational_incidents": True,
+        },
+        "approval_state": {
+            "danger_full_access_approved_for_run": False,
+            "danger_full_access_approval_note": None,
+            "privileged_action_approvals": [],
+        },
         "notification_config": {
             "enabled": True,
             "auto_send_allowed": True,

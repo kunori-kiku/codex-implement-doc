@@ -10,6 +10,8 @@ C <nonce>
 D <nonce>
 E <nonce>
 F <nonce>
+G <nonce>
+H <nonce>
 CUSTOM <nonce> <freeform instruction>
 
 This script only parses.
@@ -42,6 +44,8 @@ CHOICE_ACTIONS = {
     "D": "pause_for_new_roadmap_section",
     "E": "stop_run",
     "F": "run_read_only_verifier_first",
+    "G": "approve_non_privileged_mcp_remediation",
+    "H": "approve_privileged_mcp_remediation_after_safety_review",
     "CUSTOM": "continue_with_custom_instruction"
 }
 
@@ -53,7 +57,7 @@ def now_iso() -> str:
 def parse_reply(raw_reply: str, expected_nonce: str) -> dict:
     text = raw_reply.strip()
 
-    choice_match = re.fullmatch(r"([A-Fa-f])\s+(\S+)", text)
+    choice_match = re.fullmatch(r"([A-Ha-h])\s+(\S+)", text)
     if choice_match:
         choice = choice_match.group(1).upper()
         nonce = choice_match.group(2)

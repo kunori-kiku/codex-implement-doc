@@ -39,7 +39,13 @@ E. Stop this implementation run.
 
 F. Run a read-only verifier audit first.
 
+G. Approve non-privileged MCP-agent remediation of the blocker.
+
+H. Approve privileged or dangerous remediation only after independent safety review.
+
 CUSTOM. Provide a freeform instruction.
+
+Use remote decision first. Ask in the direct Codex session only if no remote notification path is available.
 
 ## Notification Sent
 
@@ -58,4 +64,6 @@ C <nonce>
 D <nonce>
 E <nonce>
 F <nonce>
+G <nonce>
+H <nonce>
 CUSTOM <nonce> <your instruction>
