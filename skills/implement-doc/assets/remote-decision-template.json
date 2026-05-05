@@ -1,0 +1,22 @@
+{
+  "decision_id": "YYYYMMDD-HHMMSS-telegram-decision",
+  "timestamp": "2026-05-05T02:40:15+10:00",
+  "source": "telegram_notifier",
+  "telegram_user_id": "",
+  "telegram_chat_id": "",
+  "telegram_message_id": "",
+  "run_id": "",
+  "task_id": "",
+  "milestone_id": "",
+  "incident_id": "",
+  "nonce": "",
+  "raw_reply": "",
+  "parsed_choice": "A",
+  "custom_instruction": null,
+  "accepted": true,
+  "rejection_reason": null,
+  "controller_action": "continue_current_route",
+  "state_before": "",
+  "state_after": "",
+  "follow_up_task": null
+}

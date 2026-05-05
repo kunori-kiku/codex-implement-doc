@@ -1,0 +1,35 @@
+# Codex MCP configuration for the implement-doc workflow.
+# This directory is being treated as the .codex root.
+
+[mcp_servers.codex_worker]
+command = "codex"
+args = ["mcp-server"]
+startup_timeout_sec = 30
+tool_timeout_sec = 3600
+enabled_tools = ["codex", "codex-reply"]
+
+[mcp_servers.telegram_notifier]
+command = "npx"
+args = ["-y", "telegram-notifier-mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 300
+enabled_tools = ["send_message", "send_document", "get_updates"]
+
+[mcp_servers.telegram_notifier.env]
+TELEGRAM_BOT_TOKEN = "FILL_ME_TELEGRAM_BOT_TOKEN"
+TELEGRAM_CHAT_ID = "FILL_ME_TELEGRAM_CHAT_ID"
+
+[mcp_servers.resend]
+command = "npx"
+args = ["-y", "resend-mcp"]
+startup_timeout_sec = 30
+tool_timeout_sec = 300
+
+[mcp_servers.resend.env]
+RESEND_API_KEY = "FILL_ME_RESEND_API_KEY"
+
+[profiles.main_controller]
+# Main controller profile. This profile may access codex_worker, resend, and telegram_notifier MCP servers.
+
+[profiles.worker]
+# Worker profile. Avoid exposing codex_worker, resend, or telegram_notifier to this profile if your Codex setup supports profile-level MCP isolation.

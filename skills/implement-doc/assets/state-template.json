@@ -1,0 +1,109 @@
+{
+  "run_id": "YYYYMMDD-HHMMSS-slug",
+  "title": "Human readable title",
+  "roadmap_doc": "docs/roadmap.md",
+  "repo_root": "/absolute/path/to/repo",
+  "branch": "current-branch",
+  "worker_thread_id": null,
+  "status": "active",
+  "created_at": "2026-05-05T01:30:12+10:00",
+  "updated_at": "2026-05-05T01:30:12+10:00",
+  "current_milestone": null,
+  "current_task_id": null,
+  "roadmap_summary": {
+    "goals": [],
+    "non_goals": [],
+    "constraints": [],
+    "milestones": [],
+    "acceptance_checks": [],
+    "risks": []
+  },
+  "completed_tasks": [],
+  "open_tasks": [],
+  "blocked_tasks": [],
+  "reports": [],
+  "incidents": [],
+  "decisions": [],
+  "remote_decisions": [],
+  "notifications": [],
+  "last_verified_git_head": null,
+  "last_worker_summary": null,
+  "last_lightweight_diff_triage": {
+    "git_status_short": null,
+    "git_diff_name_status": null,
+    "git_diff_stat": null,
+    "git_diff_check": null
+  },
+  "unresolved_user_decision": null,
+  "pending_remote_decision": null,
+  "notification_config": {
+    "enabled": true,
+    "auto_send_allowed": true,
+    "notify_channels": [
+      "resend",
+      "telegram_notifier"
+    ],
+    "primary_notification_channel": "resend",
+    "reply_channel": "telegram_notifier",
+    "resend_mode": "notify_only",
+    "telegram_mode": "plain_text_reply",
+    "send_incident_report": true,
+    "send_worker_report": true,
+    "resend": {
+      "enabled": true,
+      "mode": "notify_only",
+      "from": "Codex Orchestrator <codex-alert@example.com>",
+      "to": [],
+      "cc": [],
+      "bcc": [],
+      "reply_to": null,
+      "allow_inbound_email_decisions": false,
+      "allow_contact_management": false,
+      "allow_broadcasts": false,
+      "allow_domain_management": false,
+      "allow_api_key_management": false,
+      "allow_webhook_management": false
+    },
+    "telegram": {
+      "enabled": true,
+      "mode": "plain_text_reply",
+      "allowed_responders": {
+        "telegram_user_ids": []
+      }
+    },
+    "signal": {
+      "enabled": false,
+      "mode": "future_fixed_recipient_notify_only",
+      "reason": "Do not use generic signal_mcp; existing small MCP exposes send/receive account access and is under-hardened."
+    }
+  },
+  "mcp_tool_map": {
+    "resend": {
+      "server": "resend",
+      "role": "notify_only_email_sender",
+      "send_email_tool": "use_the_email_send_tool_exposed_by_resend_mcp",
+      "forbidden_tool_groups": [
+        "received_emails",
+        "contacts",
+        "broadcasts",
+        "domains",
+        "segments",
+        "topics",
+        "contact_properties",
+        "api_keys",
+        "webhooks"
+      ]
+    },
+    "telegram": {
+      "server": "telegram_notifier",
+      "send_message": "send_message",
+      "send_document": "send_document",
+      "get_updates": "get_updates"
+    },
+    "signal": {
+      "server": null,
+      "enabled": false
+    }
+  },
+  "notification_intents": []
+}

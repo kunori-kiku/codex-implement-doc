@@ -1,0 +1,110 @@
+{
+  "notification_id": "YYYYMMDD-HHMMSS-incident-id",
+  "created_at": "2026-05-05T02:40:15+10:00",
+  "run_id": "",
+  "task_id": "",
+  "milestone_id": "",
+  "incident_id": "",
+  "severity": "SEV2",
+  "should_notify_user": true,
+  "auto_send_allowed": true,
+  "notify_channels": [
+    "resend",
+    "telegram_notifier"
+  ],
+  "primary_notification_channel": "resend",
+  "reply_channel": "telegram_notifier",
+  "resend_mode": "notify_only",
+  "telegram_mode": "plain_text_reply",
+  "send_incident_report": true,
+  "send_worker_report": true,
+  "allowed_responders": {
+    "telegram_user_ids": []
+  },
+  "title": "Roadmap decision required",
+  "summary": "",
+  "message": "",
+  "report_paths": {
+    "worker_report": "",
+    "incident_report": "",
+    "controller_decision": ""
+  },
+  "resend": {
+    "from": "Codex Orchestrator <codex-alert@example.com>",
+    "to": [],
+    "cc": [],
+    "bcc": [],
+    "reply_to": null,
+    "subject": "[Codex SEV2] Roadmap decision required",
+    "html_artifact": "",
+    "text_artifact": "",
+    "send_as_attachment_if_supported": true,
+    "embed_report_if_attachment_not_supported": true,
+    "allow_inbound_email_decisions": false,
+    "forbidden_tool_groups": [
+      "received_emails",
+      "contacts",
+      "broadcasts",
+      "domains",
+      "segments",
+      "topics",
+      "contact_properties",
+      "api_keys",
+      "webhooks"
+    ]
+  },
+  "telegram": {
+    "message_artifact": "",
+    "reply_help_artifact": "",
+    "send_incident_report": true,
+    "send_worker_report": true
+  },
+  "remote_reply": {
+    "enabled": true,
+    "incident_id": "",
+    "nonce": "",
+    "valid_choices": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "CUSTOM"
+    ],
+    "reply_patterns": [
+      "^(A|B|C|D|E|F)\\s+<nonce>$",
+      "^CUSTOM\\s+<nonce>\\s+.+$"
+    ],
+    "on_valid_reply": "write_remote_decision_and_continue",
+    "on_invalid_reply": "send_help_message",
+    "expires_at": null
+  },
+  "delivery": {
+    "resend": {
+      "attempted": false,
+      "succeeded": false,
+      "timestamp": null,
+      "error": null,
+      "email_id": null
+    },
+    "telegram": {
+      "attempted": false,
+      "succeeded": false,
+      "timestamp": null,
+      "error": null
+    },
+    "telegram_incident_report": {
+      "attempted": false,
+      "succeeded": false,
+      "timestamp": null,
+      "error": null
+    },
+    "telegram_worker_report": {
+      "attempted": false,
+      "succeeded": false,
+      "timestamp": null,
+      "error": null
+    }
+  }
+}
