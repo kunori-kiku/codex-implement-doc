@@ -26,6 +26,8 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
+from env_settings import env_list, env_value, find_codex_home, is_unfilled, load_env_settings
+
 
 MELBOURNE_TZ = timezone(timedelta(hours=10))
 
@@ -117,6 +119,8 @@ def main() -> int:
     args = parser.parse_args()
 
     repo_root = Path(args.repo_root).resolve()
+    codex_home = find_codex_home(Path.cwd())
+    env_settings = load_env_settings(codex_home)
     branch = git_branch(repo_root)
     title = args.title or Path(args.roadmap_doc).stem
     slug = slugify(title)
@@ -209,11 +213,17 @@ def main() -> int:
             "resend": {
                 "enabled": True,
                 "mode": "notify_only",
-                "from": "Codex Orchestrator <codex-alert@example.com>",
-                "to": [],
-                "cc": [],
-                "bcc": [],
-                "reply_to": None,
+                "from": env_value(
+                    env_settings,
+                    "SENDER_EMAIL_ADDRESS",
+                    "Codex Orchestrator <codex-alert@example.com>",
+                ),
+                "to": env_list(env_settings, "RESEND_TO"),
+                "cc": env_list(env_settings, "RESEND_CC"),
+                "bcc": env_list(env_settings, "RESEND_BCC"),
+                "reply_to": None
+                if is_unfilled(env_value(env_settings, "REPLY_TO_EMAIL_ADDRESSES"))
+                else env_value(env_settings, "REPLY_TO_EMAIL_ADDRESSES"),
                 "allow_inbound_email_decisions": False,
                 "allow_contact_management": False,
                 "allow_broadcasts": False,
@@ -225,7 +235,7 @@ def main() -> int:
                 "enabled": True,
                 "mode": "plain_text_reply",
                 "allowed_responders": {
-                    "telegram_user_ids": []
+                    "telegram_user_ids": env_list(env_settings, "TELEGRAM_USER_IDS")
                 }
             },
             "signal": {

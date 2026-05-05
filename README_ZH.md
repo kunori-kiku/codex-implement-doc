@@ -104,9 +104,12 @@ telegram_notifier
 
 ## 必须填写的位置
 
-### 1. `config.toml`
+有两个配置入口：
 
-打开 `config.toml`，替换这些占位符：
+- `config.toml` 保留 MCP server 入口和启动这些 server 所需的 API 凭据。
+- `.env` 保存工作流通知路由值，也就是不适合维护在生成 state 里的发件人、收件人和 allowlist。
+
+先在 `config.toml` 中填写 MCP 凭据占位符：
 
 ```toml
 [mcp_servers.telegram_notifier.env]
@@ -117,96 +120,49 @@ TELEGRAM_CHAT_ID = "FILL_ME_TELEGRAM_CHAT_ID"
 RESEND_API_KEY = "FILL_ME_RESEND_API_KEY"
 ```
 
-建议同时添加 Resend 发件人地址：
+然后复制工作流通知配置示例：
 
-```toml
-[mcp_servers.resend.env]
-RESEND_API_KEY = "re_..."
-SENDER_EMAIL_ADDRESS = "Codex Orchestrator <alerts@your-verified-domain.com>"
-REPLY_TO_EMAIL_ADDRESSES = "you@example.com"
+```bash
+cp .env.example .env
 ```
 
-`REPLY_TO_EMAIL_ADDRESSES` 是可选项。默认情况下，邮件回复只用于通知，不作为可执行审批。
+填写 `.env`：
 
-### 2. Resend 默认发件人与收件人
+```env
+TELEGRAM_USER_IDS=FILL_ME_TELEGRAM_USER_ID
 
-当前模板中，收件人为空，发件人还是占位地址：
-
-```json
-"from": "Codex Orchestrator <codex-alert@example.com>",
-"to": []
+SENDER_EMAIL_ADDRESS=Codex Orchestrator <alerts@your-verified-domain.com>
+RESEND_TO=you@example.com
+RESEND_CC=
+RESEND_BCC=
+REPLY_TO_EMAIL_ADDRESSES=you@example.com
 ```
 
-需要填写这些文件：
+含义：
 
 ```text
-skills/implement-doc/assets/state-template.json
-skills/implement-doc/assets/notification-intent-template.json
-skills/implement-doc/scripts/init_implement_doc_run.py
+TELEGRAM_USER_IDS         允许审批、拒绝、停止或重定向 run 的 Telegram 用户 ID，多个 ID 用逗号分隔。
+SENDER_EMAIL_ADDRESS      已验证的 Resend 发件地址。
+RESEND_TO                 接收 incident report 和长通知邮件的收件人，多个邮箱用逗号分隔。
+RESEND_CC                 可选 CC 收件人，多个邮箱用逗号分隔。
+RESEND_BCC                可选 BCC 收件人，多个邮箱用逗号分隔。
+REPLY_TO_EMAIL_ADDRESSES  可选 reply-to 地址。默认情况下，邮件回复不是可执行审批。
 ```
 
-示例：
+`config.toml` 通过 `npx` 直接启动 Resend 和 Telegram，不再通过 Python wrapper 启动 MCP server。
 
-```json
-"from": "Codex Orchestrator <alerts@your-verified-domain.com>",
-"to": ["you@example.com"]
-```
+`init_implement_doc_run.py` 创建新的 `.codex-orchestrator/implement-doc/state/*.json` 时，会读取 `.env`，并把这些工作流通知值复制进生成的 state。
 
-如果已经创建过 run，也要更新已经生成的 state 文件：
-
-```text
-.codex-orchestrator/implement-doc/state/*.json
-```
-
-对已经存在的 run 来说，state 文件是事实来源。
-
-### 3. Telegram 审批 allowlist
-
-Telegram 有两个不同概念：
-
-- `TELEGRAM_CHAT_ID`：通知发送到哪里；
-- `telegram_user_ids`：谁可以批准、拒绝、停止或重定向实现 run。
-
-需要填写：
-
-```json
-"allowed_responders": {
-  "telegram_user_ids": []
-}
-```
-
-位置：
-
-```text
-skills/implement-doc/assets/state-template.json
-skills/implement-doc/assets/notification-intent-template.json
-skills/implement-doc/scripts/init_implement_doc_run.py
-```
-
-填写你的数字 Telegram user ID：
-
-```json
-"allowed_responders": {
-  "telegram_user_ids": ["123456789"]
-}
-```
-
-如果已经创建过 run，也要更新：
-
-```text
-.codex-orchestrator/implement-doc/state/*.json
-```
-
-如果不填写 allowlist，远程回复可以被解析，但工作流不应该把它们当作可执行决策。
+如果 run 已经存在，它会继续使用已经生成的 state。若想让旧 run 使用新的通知配置，请新建 run，或者手动更新那个旧 state 文件。
 
 ## 获取 Telegram Token 和 ID
 
 这个工作流里，Telegram 不是一个通用 API key，而是需要三个值：
 
 ```text
-TELEGRAM_BOT_TOKEN  = bot 的 token，用于发送和读取消息
-TELEGRAM_CHAT_ID    = 通知发送到哪个私聊、群组或频道
-telegram_user_ids   = 允许审批、拒绝、停止或重定向 run 的用户 ID
+TELEGRAM_BOT_TOKEN  = bot 的 token，用于发送和读取消息；写入 config.toml
+TELEGRAM_CHAT_ID    = 通知发送到哪个私聊、群组或频道；写入 config.toml
+TELEGRAM_USER_IDS   = 允许审批、拒绝、停止或重定向 run 的用户 ID；写入 .env
 ```
 
 Telegram 官方文档说明，bot token 由 `@BotFather` 生成；Bot API 使用 `getUpdates` 接收 incoming updates。
@@ -252,7 +208,7 @@ curl "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getUpdates"
 }
 ```
 
-把这个值填入：
+把这个值写入 `config.toml`：
 
 ```toml
 TELEGRAM_CHAT_ID = "123456789"
@@ -278,22 +234,16 @@ TELEGRAM_CHAT_ID = "123456789"
 }
 ```
 
-把这个值填入 `telegram_user_ids`。
+把这个值写入 `.env`：
 
-填写位置：
-
-```text
-skills/implement-doc/assets/state-template.json
-skills/implement-doc/assets/notification-intent-template.json
-skills/implement-doc/scripts/init_implement_doc_run.py
+```env
+TELEGRAM_USER_IDS=123456789
 ```
 
-示例：
+如果有多个允许审批的用户，用逗号分隔：
 
-```json
-"allowed_responders": {
-  "telegram_user_ids": ["123456789"]
-}
+```env
+TELEGRAM_USER_IDS=123456789,987654321
 ```
 
 ### 常见 Telegram 问题
@@ -301,16 +251,16 @@ skills/implement-doc/scripts/init_implement_doc_run.py
 - 如果 `getUpdates` 返回空数组，先给 bot 发一条新消息，再试一次。
 - 如果 bot 在群组里，privacy mode 可能影响它能看到的消息。初次配置建议先用私聊测试。
 - 如果使用群组或超级群组，`TELEGRAM_CHAT_ID` 要填 `chat.id`，不要填个人 `from.id`。
-- `telegram_user_ids` 要填你的个人 `from.id`。
+- `TELEGRAM_USER_IDS` 要填你的个人 `from.id`。
 
 ## 获取 Resend API Key 和发件配置
 
 Resend 不只是填一个 API key。这个工作流需要：
 
 ```text
-RESEND_API_KEY          = Resend API key，供 MCP server 使用
-SENDER_EMAIL_ADDRESS    = 已验证域名下的发件地址
-recipient email address = Codex incident report 发送到哪里
+RESEND_API_KEY          = Resend API key，供 MCP server 使用；写入 config.toml
+SENDER_EMAIL_ADDRESS    = 已验证域名下的发件地址；写入 .env
+recipient email address = Codex incident report 发送到哪里；写入 .env
 ```
 
 通常还需要先验证一个发信域名，Resend 才能稳定发送正式邮件。
@@ -342,7 +292,6 @@ alerts.example.com
 7. 写入 `config.toml`：
 
 ```toml
-[mcp_servers.resend.env]
 RESEND_API_KEY = "re_..."
 ```
 
@@ -350,42 +299,32 @@ RESEND_API_KEY = "re_..."
 
 域名验证通过后，Resend 允许从该域名下的地址发信。这个地址不一定要是真实 inbox，但建议使用可回复地址。
 
-在 `config.toml` 的 `[mcp_servers.resend.env]` 下添加：
+把发件人和可选 reply-to 地址写入 `.env`：
 
-```toml
-SENDER_EMAIL_ADDRESS = "Codex Orchestrator <alerts@alerts.example.com>"
-REPLY_TO_EMAIL_ADDRESSES = "you@example.com"
+```env
+SENDER_EMAIL_ADDRESS=Codex Orchestrator <alerts@alerts.example.com>
+REPLY_TO_EMAIL_ADDRESSES=you@example.com
 ```
 
 `REPLY_TO_EMAIL_ADDRESSES` 是可选项。默认情况下，工作流仍然把邮件视为通知通道，不把邮件回复作为可执行审批。
 
 ### 配置收件人邮箱
 
-MCP server 只有在工作流提供收件人之后才能发邮件。需要填写这些文件中的 `to`：
+MCP server 只有在工作流提供收件人之后才能发邮件。把收件人写入 `.env`：
 
-```text
-skills/implement-doc/assets/state-template.json
-skills/implement-doc/assets/notification-intent-template.json
-skills/implement-doc/scripts/init_implement_doc_run.py
+```env
+RESEND_TO=you@example.com
+RESEND_CC=
+RESEND_BCC=
 ```
 
-示例：
+如果有多个收件人，用逗号分隔：
 
-```json
-"to": ["you@example.com"]
+```env
+RESEND_TO=owner@example.com,backup@example.com
 ```
 
-同时替换模板中的发件人：
-
-```json
-"from": "Codex Orchestrator <alerts@alerts.example.com>"
-```
-
-如果已经创建过 run，也要更新生成的 run state：
-
-```text
-.codex-orchestrator/implement-doc/state/*.json
-```
+新创建的 run state 会自动继承这些值。如果 run 已经存在，它会继续使用已经生成的 state；请新建 run，或者手动更新那个旧 state。
 
 ### Resend 最小检查清单
 
@@ -394,7 +333,7 @@ skills/implement-doc/scripts/init_implement_doc_run.py
 - `RESEND_API_KEY` 以 `re_` 开头；
 - 发送域名在 Resend 中已经 verified；
 - `SENDER_EMAIL_ADDRESS` 使用这个已验证域名；
-- `to` 至少包含一个收件人邮箱；
+- `RESEND_TO` 至少包含一个收件人邮箱；
 - 收件人邮箱能接收外部邮件。
 
 ## 本地 smoke test
@@ -421,23 +360,6 @@ PY
 CODEX_HOME=/home/kunorikiku/source/codex-workflow-deploy codex mcp list
 ```
 
-用假的环境变量测试 MCP server 能否启动：
-
-```bash
-timeout 8s env RESEND_API_KEY=re_placeholder npx -y resend-mcp
-```
-
-```bash
-timeout 8s env TELEGRAM_BOT_TOKEN=000000:placeholder TELEGRAM_CHAT_ID=123456 npx -y telegram-notifier-mcp
-```
-
-预期启动信息：
-
-```text
-Resend MCP Server running on stdio
-Telegram Notifier MCP server running on stdio
-```
-
 测试 helper scripts：
 
 ```bash
@@ -460,7 +382,7 @@ initializer 会创建 `.codex-orchestrator/implement-doc/...` 运行时目录。
 
 ## 真实通道测试
 
-填入真实凭据后，用这个目录作为 `CODEX_HOME` 启动 Codex，然后测试 Telegram：
+在 `config.toml` 填入真实凭据、在 `.env` 填入通知路由后，用这个目录作为 `CODEX_HOME` 启动 Codex，然后测试 Telegram：
 
 ```text
 Use telegram_notifier.send_message to send me: "Codex Telegram MCP test OK"
@@ -582,6 +504,7 @@ controller 必须验证：
 - 默认不要使用 Signal。
 - SEV0-SEV2 未得到有效 Telegram 决策、直接用户指令或 roadmap 更新前，不要继续。
 - 不要把 API key 提交到 git 或写进日志。
+- `config.toml` 默认只有 API key 占位符。如果你填入真实凭据后要发布 fork，请先移除真实值。
 
 ## 故障排查
 
@@ -595,19 +518,19 @@ echo "$CODEX_HOME"
 
 如果 Telegram server 能启动但收不到消息：
 
-- 检查 `TELEGRAM_BOT_TOKEN`；
-- 检查 `TELEGRAM_CHAT_ID`；
+- 检查 `config.toml` 里的 `TELEGRAM_BOT_TOKEN`；
+- 检查 `config.toml` 里的 `TELEGRAM_CHAT_ID`；
 - 先给 bot 发一条消息；
 - 如果是群组，确认 bot 已加入群组；
 - 用 `getUpdates` 确认 Telegram 返回的 chat ID。
 
 如果 Resend 能启动但发信失败：
 
-- 检查 `RESEND_API_KEY`；
+- 检查 `config.toml` 里的 `RESEND_API_KEY`；
 - 检查 Resend 里的发送域名是否 verified；
 - 确认 SPF 和 DKIM 已验证；
-- 确认 `SENDER_EMAIL_ADDRESS` 使用已验证域名；
-- 确认 `to` 收件人不是空数组。
+- 确认 `.env` 里的 `SENDER_EMAIL_ADDRESS` 使用已验证域名；
+- 确认 `.env` 里的 `RESEND_TO` 不是空值。
 
 如果 `triage_diff.sh` 提示不是 Git worktree，请在项目 repo 中运行，而不是在这个 `.codex` home 里运行。
 
