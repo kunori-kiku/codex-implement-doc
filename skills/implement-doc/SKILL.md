@@ -201,6 +201,17 @@ When starting a worker session, use the MCP `codex` tool.
 
 When continuing a worker session, use the MCP `codex-reply` tool with the stored `threadId`.
 
+Before starting the MCP worker, prompt the user to choose the worker sandbox mode.
+
+Explain both risks plainly:
+
+* `workspace-write` is safer because it limits filesystem writes to the workspace, but Codex MCP runs in this mode may sometimes hang forever because of sandbox or bubblewrap behavior.
+* `danger-full-access` can avoid sandbox-related hangs, but it removes filesystem sandbox protections. The worker may read or write files outside the repository and run commands without sandbox containment. Use it only when the repository is disposable, containerized, backed up, or the user accepts that risk.
+
+Ask the user whether they want to run the MCP worker with `danger-full-access`.
+
+Default to `workspace-write` only if the user declines `danger-full-access` or does not explicitly approve it.
+
 Worker sessions should use:
 
 ```json
@@ -227,7 +238,19 @@ Recommended worker configuration:
 }
 ```
 
-Never use `danger-full-access` unless the repository is inside a disposable container or sandbox and the user explicitly requested it.
+If the user explicitly approves `danger-full-access`, use:
+
+```json
+{
+  "profile": "worker",
+  "approval-policy": "never",
+  "sandbox": "danger-full-access",
+  "include-plan-tool": true,
+  "cwd": "<repo-root>"
+}
+```
+
+Never use `danger-full-access` unless the user explicitly approved it after seeing the risk explanation.
 
 ## 4. Optional Notification MCP Setup
 
@@ -1100,4 +1123,3 @@ Reply in Telegram with: C 8KQ2
 * Do not use Signal by default.
 * For SEV3, attempt one correction task.
 * For SEV4, record and continue.
-
