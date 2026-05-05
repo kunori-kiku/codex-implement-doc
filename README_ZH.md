@@ -88,6 +88,13 @@ export CODEX_HOME=/home/kunorikiku/source/codex-workflow-deploy
 ~/.codex/
 ```
 
+无论你使用哪个目录作为 Codex home，里面都应该同时有 `config.toml` 和 `.env`。如果使用默认 Codex home，文件位置是：
+
+```text
+~/.codex/config.toml
+~/.codex/.env
+```
+
 部署后检查 Codex 是否能读到 MCP 配置：
 
 ```bash
@@ -108,6 +115,8 @@ telegram_notifier
 
 - `config.toml` 保留 MCP server 入口和启动这些 server 所需的 API 凭据。
 - `.env` 保存工作流通知路由值，也就是不适合维护在生成 state 里的发件人、收件人和 allowlist。
+
+`.env` 要放在你实际使用的 Codex home 中，和 `config.toml` 同级。如果直接把本仓库作为 Codex home，就是 `/home/kunorikiku/source/codex-workflow-deploy/.env`；如果安装到默认位置，就是 `~/.codex/.env`。
 
 先在 `config.toml` 中填写 MCP 凭据占位符：
 

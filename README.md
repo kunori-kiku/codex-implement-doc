@@ -88,6 +88,13 @@ Or copy the contents of this directory into your normal Codex home, usually:
 ~/.codex/
 ```
 
+Whichever directory is your Codex home must contain both `config.toml` and `.env`. If you use the normal Codex home, the files are:
+
+```text
+~/.codex/config.toml
+~/.codex/.env
+```
+
 After deployment, confirm that Codex sees the MCP servers:
 
 ```bash
@@ -108,6 +115,8 @@ There are two setup surfaces:
 
 - `config.toml` keeps the MCP server entries and API credentials used to start those servers.
 - `.env` keeps workflow notification routing values that are inconvenient to maintain inside generated run state.
+
+Put `.env` next to `config.toml` in the Codex home you actually use. For this repository-as-home setup that is `/home/kunorikiku/source/codex-workflow-deploy/.env`; for a normal install that is `~/.codex/.env`.
 
 In `config.toml`, fill the MCP credential placeholders:
 
